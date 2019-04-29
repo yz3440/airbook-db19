@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<!-- Search Form -->
+<div class="row border border-dark rounded m-4">
+    <form style="width:100%" class="m-4">
+        <div class="form-row">
+            <div class="form-group col-md-2 mb-3">
+                <label>Source</label>
+                <input type="text" class="form-control" placeholder="City/Airport">
+            </div>
+            <div class="form-group col-md-2 mb-3">
+                <label>Destination</label>
+                <input type="text" class="form-control" placeholder="City/Airport">
+            </div>
+            <div class="form-group col-md-4 mb-3">
+                <label>Departing</label>
+                <input type="date" class="form-control" placeholder="">
+            </div>
+            <div class="form-group col-md-4 mb-3">
+                <label>Returning</label>
+                <input type="date" class="form-control" placeholder="">
+
+            </div>
+        </div>
+        <div class="form-row mb-2">
+            <div class="custom-control custom-checkbox ml-1">
+                <input type="checkbox" class="custom-control-input" id="customCheck1">
+                <label class="custom-control-label" for="customCheck1">Round Trip</label>
+            </div>
+        </div>
+        <div class="form-row">
+            <button type="submit" class="btn btn-dark">Search Flights</button>
+        </div>
+    </form>
+</div>
+
+<!-- Search Results -->
+<div class="row border border-dark rounded m-4">
+    {% for flight in flights %}
+
+    <div style="width:100%" class="row m-4 flight-card">
+        <div class="col-sm-3">
+            <h4>
+                {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+                {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+                <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+                {% endif %}
+            </h4>
+            <div class="text-muted">{{flight.airline_name}}</div>
+            <small class="text-muted">{{flight.flight_number}}</small>
+        </div>
+        <div class="col-sm-3">
+            <h4>
+                {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+                {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+            </h4>
+            <div class="text-muted">
+                {{flight.departure_airport}} - {{flight.arrival_airport}}
+            </div>
+        </div>
+        <div class="col text-right">
+            <h4>${{flight.base_price}}</h4>
+            <div class="text-muted">100 seats left</div>
+            <div class="text-muted">{{flight.status}}</div>
+
+        </div>
+        <div class="col-sm-auto text-right">
+            <a class="btn btn-dark" href="#" role="button">Purchase</a>
+        </div>
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock content %}
