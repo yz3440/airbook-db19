@@ -4,34 +4,37 @@
 
 <!-- Search Form -->
 <div class="row border border-dark rounded m-4">
-    <form style="width:100%" class="m-4">
+    <form style="width:100%" class="m-4" method="POST" action="">
+        {{form.hidden_tag()}}
         <div class="form-row">
             <div class="form-group col-md-2 mb-3">
-                <label>Source</label>
-                <input type="text" class="form-control" placeholder="City/Airport">
+                {{form.source_place.label(class="form-control-label")}}
+                {{form.source_place(class="form-control", placeholder="City/Airport")}}
             </div>
             <div class="form-group col-md-2 mb-3">
-                <label>Destination</label>
-                <input type="text" class="form-control" placeholder="City/Airport">
+                {{form.destination_place.label(class="form-control-label")}}
+                {{form.destination_place(class="form-control", placeholder="City/Airport")}}
             </div>
             <div class="form-group col-md-4 mb-3">
-                <label>Departing</label>
-                <input type="date" class="form-control" placeholder="">
+                {{form.departure_date.label(class="form-control-label")}}
+                {{form.departure_date(class="form-control", type="date", placeholder="")}}
+
+                <!-- <input type="date" class="form-control" placeholder=""> -->
             </div>
             <div class="form-group col-md-4 mb-3">
-                <label>Returning</label>
-                <input type="date" class="form-control" placeholder="">
+                {{form.arrival_date.label(class="form-control-label")}}
+                {{form.arrival_date(class="form-control", type="date", placeholder="")}}
 
             </div>
         </div>
         <div class="form-row mb-2">
             <div class="custom-control custom-checkbox ml-1">
-                <input type="checkbox" class="custom-control-input" id="customCheck1">
-                <label class="custom-control-label" for="customCheck1">Round Trip</label>
+                {{form.round_trip(class="custom-control-input")}}
+                {{form.round_trip.label(class='custom-control-label')}}
             </div>
         </div>
         <div class="form-row">
-            <button type="submit" class="btn btn-dark">Search Flights</button>
+            {{form.submit(class='btn btn-dark')}}
         </div>
     </form>
 </div>

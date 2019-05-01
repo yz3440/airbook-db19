@@ -1,0 +1,176 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row m-4">
+    <h3 class="col m-4 text-center">Join as {{role}}</h3>
+</div>
+<div class="row m-4">
+
+    <div class="col-3"></div>
+    <div class="col border border-dark rounded m-4">
+        <form class='m-4' method="POST" action="">
+            {{form.hidden_tag()}}
+            <fieldset class="form-group">
+
+                {# first_name, last_name, DoB fields are Airline Staff only #}
+                {% if role == "Airline Staff" %}
+                <div class="row">
+                    <div class="col form-group form-group-sm">
+                        {{form.first_name.label(class="form-control-label")}}
+                        {% if form.first_name.errors %}
+                        {{form.name(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.first_name.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.first_name(class="form-control")}}
+                        {% endif %}
+                    </div>
+                    <div class="col form-group form-group-sm">
+                        {{form.last_name.label(class="form-control-label")}}
+                        {% if form.last_name.errors %}
+                        {{form.name(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.last_name.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.last_name(class="form-control")}}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col mb-3">
+                        {{form.date_of_birth.label(class="form-control-label")}}
+                        {{form.date_of_birth(class="form-control", type="date", placeholder="")}}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    {# name field are Customer only #}
+                    {% if role == "Customer" %}
+                    <div class="col form-group form-group-sm">
+                        {{form.name.label(class="form-control-label")}}
+                        {% if form.name.errors %}
+                        {{form.name(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.name.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.name(class="form-control")}}
+                        {% endif %}
+
+                    </div>
+                    {% endif %}
+
+                    {# email field is Customer and Booking Agent only #}
+                    {% if role != "Airline Staff" %}
+                    <div class="col form-group form-group-sm">
+                        {{form.email.label(class="form-control-label")}}
+
+                        {% if form.email.errors %}
+                        {{form.email(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.email(class="form-control")}}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="col form-group form-group-sm">
+                        {{form.username.label(class="form-control-label")}}
+
+                        {% if form.username.errors %}
+                        {{form.username(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.username(class="form-control")}}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                </div>
+                <div class="row">
+
+                    <div class="col-6 form-group form-group-sm">
+                        {{form.password.label(class="form-control-label")}}
+
+                        {% if form.password.errors %}
+                        {{form.password(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.password.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.password(class="form-control")}}
+                        {% endif %}
+                    </div>
+                    <div class="col-6 form-group form-group-sm">
+                        {{form.confirm_password.label(class="form-control-label")}}
+
+                        {% if form.confirm_password.errors %}
+                        {{form.confirm_password(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.confirm_password.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.confirm_password(class="form-control")}}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if role == "Airline Staff" %}
+                <div class="row">
+                    <div class="col form-group form-group-sm">
+                        {{form.airline_name.label(class="form-control-label")}}
+
+                        {% if form.airline_name.errors %}
+                        {{form.airline_name(class="form-control is-invalid")}}
+                        <div class="invalid-feedback">
+                            {% for error in form.airline_name.errors %}
+                            <span>{{error}}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{form.airline_name(class="form-control")}}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </fieldset>
+            <div class="form-group text-center">
+                {{form.submit(class='btn btn-dark')}}
+            </div>
+
+        </form>
+        <div class="border-top pt-3 pb-3 text-center">
+            <small class='text-muted'>Already Have An Account? <a class="ml-2 text-dark"
+                    href="{{url_for('login')}}">Sign In</a>
+            </small>
+        </div>
+    </div>
+    <div class="col-3"></div>
+
+
+</div>
+
+
+
+
+{% endblock content %}

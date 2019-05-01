@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block content %}
+<!-- <div class="row border border-dark rounded m-4">
+  <h2 class="col m-2 text-center">{{current_user.type}} {{current_user.name}}</h2>
+</div> -->
+<div class="row">
+  <div class="col-4 content-section border border-dark rounded">
+    <div class="media mt-3">
+      <div class="media-body">
+        <h2 class="account-heading">{{current_user.name}}</h2>
+        <p class="text-secondary">{{current_user.id}}</p>
+        <p class="text-secondary">{{current_user}}</p>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+{% endblock content %}
