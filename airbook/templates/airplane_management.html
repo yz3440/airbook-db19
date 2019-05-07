@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row m-4">
+  <h3 class="col m-4 text-center">Airplane Management - {{current_user.airline_name}}</h3>
+</div>
+
+<div class="row m-4">
+  <div class="col-6 ml-2 text-center">
+    <div style="width:100%" class="row p-4 flight-card">
+      <div class="col-sm">
+        <h4>Airplane ID</h4>
+      </div>
+      <div class="col-sm">
+        <h4>Total Seats </h4>
+      </div>
+    </div>
+    {% for airplane in airplanes %}
+    <div style="width:100%" class="row p-4 flight-card">
+      <div class="col-sm">
+        <div class="text-muted">{{airplane.id}}</div>
+      </div>
+      <div class="col-sm">
+        <div class="text-muted">{{airplane.num_of_seats}}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="col border border-dark rounded m-4 pl-2">
+
+    <form class='m-4' method="POST" action="">
+      <h3 class="text-center">Airplane Registration</h3>
+
+      {{form.hidden_tag()}}
+      <fieldset class="form-group">
+        <div class="row">
+          <div class="col form-group form-group-sm">
+            <label class="form-control-label">Airline</label>
+            <div class="form-control">{{current_user.airline_name}}</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col form-group form-group-sm">
+            {{form.airplane_id.label(class="form-control-label")}}
+            {% if form.airplane_id.errors %}
+            {{form.airplane_id(class="form-control is-invalid")}}
+            <div class="invalid-feedback">
+              {% for error in form.airplane_id.errors %}
+              <span>{{error}}</span>
+              {% endfor %}
+            </div>
+            {% else %}
+            {{form.airplane_id(class="form-control")}}
+            {% endif %}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col form-group form-group-sm">
+            {{form.num_of_seats.label(class="form-control-label")}}
+            {% if form.num_of_seats.errors %}
+            {{form.num_of_seats(class="form-control is-invalid")}}
+            <div class="invalid-feedback">
+              {% for error in form.num_of_seats.errors %}
+              <span>{{error}}</span>
+              {% endfor %}
+            </div>
+            {% else %}
+            {{form.num_of_seats(class="form-control")}}
+            {% endif %}
+          </div>
+        </div>
+
+      </fieldset>
+      <div class="form-group text-center">
+        {{form.submit(class='btn btn-dark')}}
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+
+{% endblock content %}

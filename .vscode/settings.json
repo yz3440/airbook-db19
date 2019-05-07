@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/marsz/anaconda3/envs/flask_test/bin/python"
+    "python.pythonPath": "/Users/marsz/anaconda3/envs/flask_test/bin/python",
+    "liveServer.settings.port": 5501
 }

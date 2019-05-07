@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="text-center">Customer Information</div>
+
+<div class="row border border-dark rounded m-4">
+  <div style="width:100%" class="row m-4 flight-card">
+    <div class="col-sm-6">
+      <h4>Customer</h4>
+      <div class="text-muted">{{ticket.customer.display_name}}</div>
+      <div class="text-muted">{{ticket.customer_email}}</div>
+    </div>
+    <div class="col-sm-6">
+      <h4>Booking Agent</h4>
+      {% if ticket.booking_agent_id %}
+      <div class="text-muted">{{ticket.seller.email}}</div>
+      <div class="text-muted">{{ticket.booking_agent_id}}</div>
+      {% else %}
+      <div class="text-muted">N/A</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="text-center">Payment Information</div>
+
+<div class="row border border-dark rounded m-4">
+  <div style="width:100%" class="row m-4 flight-card">
+    <div class="col-sm-3">
+      <h4>Purchase Date</h4>
+      <div class="text-muted">{{ticket.purchase_datetime.date()}}</div>
+      <div class="text-muted">{{ticket.purchase_datetime.strftime('%X')}}</div>
+    </div>
+    <div class="col-sm-3">
+      <h4>
+        {{ticket.payment_card_type}} Card
+      </h4>
+      <div class="text-muted">{{ticket.payment_card_number}}</div>
+
+    </div>
+    <div class="col-sm-3">
+      <h4>Expiration Date</h4>
+      <div class="text-muted">{{ticket.payment_expiration_date}}
+      </div>
+    </div>
+    <div class="col text-right">
+      <h4>Card Owner</h4>
+      <div class="text-muted">{{ticket.payment_card_name}}</div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="text-center">Flight Information</div>
+
+<div class="row border border-dark rounded m-4">
+  {% set flight = ticket.flight %}
+  <div style="width:100%" class="row m-4 flight-card">
+
+    <div class="col-sm-3">
+      <h4>Departing</h4>
+      <div class="text-muted">{{flight.departure_datetime.date()}}</div>
+      {% if ticket.booking_agent_id %}
+      <div class="mt-1">Booked by</div>
+      <small class="text-muted">{{ticket.booking_agent_id }}</small>
+      {% endif %}
+    </div>
+    <div class="col-sm-3">
+      <h4>
+        {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+        {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+        <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+        {% endif %}
+      </h4>
+      <div class="text-muted">{{flight.airline_name}}</div>
+      <small class="text-muted">{{flight.flight_number}}</small>
+    </div>
+    <div class="col-sm-3">
+      <h4>
+        {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+        {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+      </h4>
+      <div class="text-muted">
+        {{flight.departure_airport}} - {{flight.arrival_airport}}
+      </div>
+    </div>
+    <div class="col text-right">
+      <h4>${{ticket.sold_price}}</h4>
+      <div class="text-muted">{{flight.status}}</div>
+
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock content %}

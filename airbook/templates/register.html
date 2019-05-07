@@ -17,7 +17,7 @@
                     <div class="col form-group form-group-sm">
                         {{form.first_name.label(class="form-control-label")}}
                         {% if form.first_name.errors %}
-                        {{form.name(class="form-control is-invalid")}}
+                        {{form.first_name(class="form-control is-invalid")}}
                         <div class="invalid-feedback">
                             {% for error in form.first_name.errors %}
                             <span>{{error}}</span>
@@ -167,9 +167,28 @@
     </div>
     <div class="col-3"></div>
 
-
 </div>
 
+<div class="row">
+    <small class='col text-muted text-center'>
+        Register as
+        {% if role == "Customer" %}
+        <a class="ml-2 text-dark" href="{{url_for('register',role='Booking Agent')}}">Booking
+            Agent</a>
+        or<a class="ml-2 text-dark" href="{{url_for('register',role='Airline Staff')}}">Airline Staff</a>
+
+        {% elif role == "Booking Agent" %}
+        <a class="ml-2 text-dark" href="{{url_for('register',role='Customer')}}">Customer</a>
+        or<a class="ml-2 text-dark" href="{{url_for('register',role='Airline Staff')}}">Airline Staff</a>
+
+        {% elif role == "Airline Staff" %}
+        <a class="ml-2 text-dark" href="{{url_for('register',role='Customer')}}">Customer</a>
+        or<a class="ml-2 text-dark" href="{{url_for('register',role='Booking Agent')}}">Booking Agent</a>
+
+        {% endif %}
+    </small>
+
+</div>
 
 
 

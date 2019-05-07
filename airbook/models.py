@@ -4,8 +4,17 @@ from flask_login import UserMixin
 
 
 @login_manager.user_loader
-def load_customer(id):
-    return Customer.query.get(id)
+def load_user(id):
+    id, role = id.split(',')
+
+    if role == 'Customer':
+        return Customer.query.get(id)
+    elif role == 'Booking Agent':
+        return BookingAgent.query.get(id)
+    elif role == 'Airline Staff':
+        return AirlineStaff.query.get(id)
+    else:
+        return None
 
 
 class Airline(db.Model):
@@ -53,6 +62,10 @@ class Flight(db.Model):
     arrival_datetime = db.Column(db.DateTime, nullable=False)
     tickets = db.relationship('Ticket', backref='flight', lazy=True)
 
+    @property
+    def seats_left(self):
+        return self.airplane.num_of_seats - len(self.tickets)
+
 
 class Customer(db.Model, UserMixin):
     name = db.Column(db.String(20), nullable=False)
@@ -68,16 +81,33 @@ class Customer(db.Model, UserMixin):
     passport_country = db.Column(db.String(30))
     date_of_birth = db.Column(db.Date)
 
-    def __repr__(self):
-        return f"Customer('{self.name}', '{self.email}')  "
+    tickets = db.relationship("Ticket", backref='customer', lazy=True)
 
     @property
     def id(self):
+        return f'{self.email},Customer'
+
+    @property
+    def real_id(self):
         return self.email
 
     @property
     def role(self):
-        return 'customer'
+        return 'Customer'
+
+    @property
+    def display_name(self):
+        return self.name
+
+    @property
+    def display_profile(self):
+        return {
+            'Address': f'{self.address_building_number}, {self.address_street}, {self.address_city}, {self.address_state}',
+            'Phone Number': self.phone_number,
+            'Passport Number': self.passport_number,
+            'Passport Expiration': self.passport_expiration,
+            'Passport Country': self.passport_country,
+            "Date of Birth": self.date_of_birth}
 
 
 class AirlineStaff(db.Model, UserMixin):
@@ -93,11 +123,25 @@ class AirlineStaff(db.Model, UserMixin):
 
     @property
     def id(self):
+        return f'{self.username},Airline Staff'
+
+    @property
+    def real_id(self):
         return self.username
 
     @property
     def role(self):
-        return 'airline_staff'
+        return 'Airline Staff'
+
+    @property
+    def display_name(self):
+        return f'{self.first_name} {self.last_name}'
+
+    @property
+    def display_profile(self):
+        return {
+            'Airline Name': self.airline_name,
+            'Date of Birth': self.date_of_birth}
 
 
 class AirlineStaffPhoneNumber(db.Model):
@@ -115,11 +159,24 @@ class BookingAgent(db.Model, UserMixin):
 
     @property
     def id(self):
+        return f'{self.email},Booking Agent'
+
+    @property
+    def real_id(self):
         return self.email
 
     @property
     def role(self):
-        return 'booking_agent'
+        return 'Booking Agent'
+
+    @property
+    def display_name(self):
+        return self.email
+
+    @property
+    def display_profile(self):
+        return {
+            'Booking Agent ID': self.booking_agent_id}
 
 
 class Ticket(db.Model):
@@ -141,3 +198,7 @@ class Ticket(db.Model):
         'booking_agent.booking_agent_id'), nullable=True)
     purchase_datetime = db.Column(
         db.DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def commision(self):
+        return self.sold_price / 10 if self.booking_agent_id else None

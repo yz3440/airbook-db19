@@ -16,5 +16,4 @@ login_manager.login_view = 'login'
 def get_route():
     from airbook import routes
 
-
 get_route()

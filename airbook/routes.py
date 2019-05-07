@@ -1,24 +1,50 @@
 from flask import render_template, flash, redirect, url_for, request
 from airbook import app, db, bcrypt
-from airbook.forms import CustomerRegistrationForm, CustomerLoginForm, BookingAgentRegistrationForm, BookingAgentLoginForm, AirlineStaffRegistrationForm, AirlineStaffLoginForm, SearchFlightForm
+from airbook.forms import CustomerRegistrationForm, CustomerLoginForm, CustomerEditForm
+from airbook.forms import BookingAgentRegistrationForm, BookingAgentLoginForm
+from airbook.forms import AirlineStaffRegistrationForm, AirlineStaffLoginForm
+from airbook.forms import SearchFlightForm, PaymentForm, AgentPaymentForm, DateRangeSelectionForm
+from airbook.forms import FlightStatusEditForm, FlightRegistrationForm, AirplaneRegistrationForm, AirportRegistrationForm
 from airbook.models import Airline, Airport, Airplane, Flight, Customer, AirlineStaff, AirlineStaffPhoneNumber, BookingAgent, Ticket
 from flask_login import login_user, logout_user, current_user, login_required
 from airbook.utils import id_generator
+from datetime import datetime, timedelta
+from sqlalchemy import and_, or_, func
 
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 @app.route("/search_flight", methods=['GET', 'POST'])
 def home():
     print(current_user)
 
-    flights = Flight.query.all()
+    flights = Flight.query.filter(
+        Flight.departure_datetime > datetime.utcnow()).order_by(Flight.departure_datetime).all()
+    returning_flights = []
+    searching = False
+    round_trip = False
     form = SearchFlightForm()
     if form.validate_on_submit():
-        print(form.arrival_date.data)
-        print(type(form.departure_date.data))
-        print(form.arrival_date.data > form.departure_date.data)
+        searching = True
+        departure_airport_names = [airport.name for airport in Airport.query.filter(
+            or_(Airport.name == form.source_place.data, Airport.city == form.source_place.data)).all()]
+        arrival_airport_names = [airport.name for airport in Airport.query.filter(
+            or_(Airport.name == form.destination_place.data, Airport.city == form.destination_place.data)).all()]
+        flights = Flight.query.filter(
+            Flight.departure_airport.in_(departure_airport_names),
+            Flight.arrival_airport.in_(arrival_airport_names),
+            func.DATE(Flight.departure_datetime) == form.departure_date.data).all()
+        departure_date = form.departure_date.data
+        if form.round_trip.data:
+            returning_flights = Flight.query.filter(
+                Flight.arrival_airport.in_(departure_airport_names),
+                Flight.departure_airport.in_(arrival_airport_names),
+                func.DATE(Flight.arrival_datetime) == form.arrival_date.data).all()
+            print(returning_flights)
+            arrival_date = form.arrival_date.data
+            round_trip = True
 
-    return render_template('search_flight.html', title="Search Result", flights=flights, form=form)
+    return render_template('search_flight.html', title="Search Result", flights=flights, returning_flights=returning_flights, searching=searching,
+                           round_trip=round_trip, form=form)
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -94,7 +120,7 @@ def login(role="Customer"):
             next_page = request.args.get('next')
             flash(f" {role} login successful.", "success")
 
-            # return redirect(next_page) if next_page else redirect(url_for('home'))
+            return redirect(next_page) if next_page else redirect(url_for('account'))
         else:
             flash(f"{role} login Unsuccessful.")
 
@@ -112,4 +138,254 @@ def logout():
 @app.route("/account")
 @login_required
 def account():
-    return render_template('account.html', title='Account')
+    if current_user.role == 'Airline Staff':
+        flights = [flight for flight in Flight.query.filter_by(airline_name=current_user.airline_name).all(
+        ) if flight.departure_datetime > datetime.utcnow() and flight.departure_datetime < datetime.utcnow() + timedelta(days=30)]
+        flights.sort(
+            key=lambda flight: flight.departure_datetime, reverse=True)
+        return render_template('account.html', flights=flights, title='Account')
+
+    def ticket_departure_datetime(ticket):
+        return ticket.flight.departure_datetime
+    tickets = [
+        ticket for ticket in current_user.tickets if ticket.flight.departure_datetime > datetime.utcnow()]
+    tickets.sort(key=ticket_departure_datetime)
+
+    return render_template('account.html', tickets=tickets, title='Account')
+
+
+@app.route("/my_flights", methods=['GET', 'POST'])
+@login_required
+def my_flights():
+    to_date, from_date = None, None
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    if current_user.role == "Airline Staff":
+        airline_name = current_user.airline_name
+        flights = Flight.query.filter_by(airline_name=airline_name).all()
+        if searching:
+            flights = [flight for flight in flights
+                       if flight.departure_datetime.date() <= to_date and flight.departure_datetime.date() >= from_date]
+        flights.sort(
+            key=lambda flight: flight.departure_datetime, reverse=True)
+        return render_template('my_flights.html', flights=flights, form=form, searching=searching, title='My Flights')
+
+    tickets = current_user.tickets
+    if searching:
+        if current_user.role == 'Customer':
+            tickets = [ticket for ticket in tickets
+                       if ticket.flight.departure_datetime.date() <= to_date and ticket.flight.departure_datetime.date() >= from_date]
+            tickets.sort(
+                key=lambda ticket: ticket.flight.departure_datetime, reverse=True)
+        elif current_user.role == 'Booking Agent':
+            tickets = [ticket for ticket in tickets
+                       if ticket.purchase_datetime.date() <= to_date and ticket.purchase_datetime.date() >= from_date]
+            tickets.sort(
+                key=lambda ticket: ticket.purchase_datetime, reverse=True)
+
+    return render_template('my_flights.html', tickets=tickets, form=form, searching=searching, title='My Flights')
+
+
+@app.route('/account/edit', methods=['GET', 'POST'])
+@login_required
+def edit_account():
+    if current_user.role == 'Customer':
+        form = CustomerEditForm()
+    else:
+        flash(f'Profile update is not available for {current_user.role}.')
+        return redirect(url_for("account"))
+    if form.validate_on_submit():
+        current_user.name = form.name.data
+        current_user.address_building_number = form.address_building_number.data
+        current_user.address_street = form.address_street.data
+        current_user.address_city = form.address_city.data
+        current_user.address_state = form.address_state.data
+        current_user.phone_number = form.phone_number.data
+        current_user.passport_number = form.passport_number.data
+        current_user.passport_expiration = form.passport_expiration.data
+        current_user.passport_country = form.passport_country.data
+        current_user.date_of_birth = form.date_of_birth.data
+
+        db.session.commit()
+        flash("Your account has been updated.")
+        return redirect(url_for('account'))
+
+    return render_template('edit_account.html', form=form, title='Account')
+
+
+@app.route('/view_ticket/<ticket_id>')
+@login_required
+def view_ticket(ticket_id):
+    ticket = Ticket.query.get(ticket_id)
+    print(ticket)
+    if ticket:
+        if (current_user.role == 'Customer' and ticket.customer_email == current_user.email) \
+                or current_user.role == 'Booking Agent' and ticket.booking_agent_id == current_user.booking_agent_id:
+            return render_template('view_ticket.html', ticket=ticket, title='View Ticket')
+
+    flash('You are not able to view this ticket.')
+    return redirect(url_for('account'))
+
+
+@app.route('/purchase/<flight>', methods=['GET', 'POST'])
+@login_required
+def purchase(flight):
+    if current_user.role not in ['Customer', 'Booking Agent']:
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    airline_name, flight_number = flight.split('-')
+
+    flight = Flight.query.filter_by(
+        airline_name=airline_name, flight_number=flight_number).first()
+    flights = [flight]
+
+    if current_user.role == 'Customer':
+        form = PaymentForm()
+    elif current_user.role == 'Booking Agent':
+        form = AgentPaymentForm()
+
+    if form.validate_on_submit():
+        for flight in flights:
+            ticket = Ticket(airline_name=flight.airline_name, flight_number=flight.flight_number, sold_price=flight.base_price,
+                            payment_card_type=form.payment_card_type.data, payment_card_number=form.payment_card_number.data,
+                            payment_card_name=form.payment_card_name.data, payment_expiration_date=form.payment_expiration_date.data)
+            if current_user.role == 'Customer':
+                ticket.customer_email = current_user.email
+            elif current_user.role == 'Booking Agent':
+                ticket.customer_email = form.customer_email.data
+                ticket.booking_agent_id = current_user.booking_agent_id
+
+            db.session.add(ticket)
+        db.session.commit()
+        flash(f'Purchase Successfully.')
+        return redirect(url_for('account'))
+    # return redirect(url_for('home'))
+    return render_template('purchase.html', form=form, flights=flights, title='Purchase')
+
+
+@app.route('/view_commision', methods=['GET', 'POST'])
+@login_required
+def view_commision():
+    if current_user.role != 'Booking Agent':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    from_date = datetime.utcnow().date() - timedelta(days=30)
+    to_date = datetime.utcnow().date()
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    tickets = [ticket for ticket in current_user.tickets
+               if ticket.purchase_datetime.date() <= to_date and ticket.purchase_datetime.date() >= from_date]
+    total_commision = sum([ticket.commision for ticket in tickets])
+    num_of_tickets = len(tickets)
+
+    return render_template('view_commision.html', num_of_tickets=num_of_tickets,
+                           total_commision=total_commision, searching=searching,
+                           form=form, title='View Commision')
+
+
+@app.route('/create_flight', methods=['GET', 'POST'])
+@login_required
+def create_flight():
+    if current_user.role in ['Customer', 'Booking Agent']:
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("account"))
+
+    form = FlightRegistrationForm()
+    form.airplane_id.choices = [(a.id, a.id)
+                                for a in current_user.airline.airplanes]
+    form.set_airline_name(current_user.airline_name)
+
+    if form.validate_on_submit():
+        flight = Flight(airline_name=current_user.airline_name, airplane_id=form.airplane_id.data,
+                        flight_number=form.flight_number.data,
+                        base_price=form.base_price.data, status="On-Time",
+                        departure_airport=form.departure_airport.data, arrival_airport=form.arrival_airport.data,
+                        departure_datetime=form.departure_datetime.data, arrival_datetime=form.arrival_datetime.data)
+        db.session.add(flight)
+        db.session.commit()
+        return redirect(url_for('account'))
+
+    return render_template("create_flight.html", form=form, title='Create Flight')
+
+
+@app.route('/edit_flight/<flight>', methods=['GET', 'POST'])
+@login_required
+def edit_flight(flight):
+    if current_user.role in ['Customer', 'Booking Agent']:
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("account"))
+    airline_name, flight_number = flight.split('-')
+    flight = Flight.query.filter_by(
+        airline_name=airline_name, flight_number=flight_number).first()
+    if flight.airline_name != current_user.airline_name:
+        flash(f'You are not authorized to edit this flight.')
+        return redirect(url_for("account"))
+    else:
+        form = FlightStatusEditForm()
+        if form.validate_on_submit():
+            flight.status = form.status.data
+            db.session.commit()
+            return redirect(url_for('account'))
+
+        # if flight.status != 'Delayed':
+        #     form.status.default = 1
+        return render_template("edit_flight.html", flight=flight, form=form, title='Edit Flight')
+
+
+@app.route('/airplane_management', methods=['GET', 'POST'])
+@login_required
+def airplane_management():
+    if current_user.role in ['Customer', 'Booking Agent']:
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("account"))
+
+    form = AirplaneRegistrationForm()
+    form.set_airline_name(current_user.airline_name)
+
+    if form.validate_on_submit():
+        airplane = Airplane(id=form.airplane_id.data,
+                            airline_name=current_user.airline_name,
+                            num_of_seats=form.num_of_seats.data)
+        db.session.add(airplane)
+        db.session.commit()
+
+    airplanes = Airplane.query.filter_by(
+        airline_name=current_user.airline_name).all()
+
+    return render_template("airplane_management.html", airplanes=airplanes, form=form, title='Airplane Management')
+
+
+@app.route('/airport_management', methods=['GET', 'POST'])
+@login_required
+def airport_management():
+    if current_user.role in ['Customer', 'Booking Agent']:
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("account"))
+
+    form = AirportRegistrationForm()
+
+    if form.validate_on_submit():
+        airport = Airport(name=form.name.data,
+                          city=form.city.data,
+                          country=form.country.data)
+        db.session.add(airport)
+        db.session.commit()
+
+    airports = Airport.query.all()
+    airports.sort(key=lambda airport: airport.country + airport.city)
+
+    return render_template("airport_management.html", airports=airports, form=form, title='Airplane Management')

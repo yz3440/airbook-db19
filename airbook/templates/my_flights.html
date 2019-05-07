@@ -1,0 +1,157 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<!-- Search Form -->
+<div class="row border border-dark rounded m-4">
+  <form style="width:100%" class="m-4" method="POST" action="">
+    {{form.hidden_tag()}}
+    <div class="form-row">
+      <div class="form-group col-md mb-3">
+        {{form.from_date.label(class="form-control-label")}}
+        {% if form.from_date.errors %}
+        {{form.from_date(class="form-control is-invalid",type='date')}}
+        <div class="invalid-feedback">
+          {% for error in form.from_date.errors %}
+          <span>{{error}}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{form.from_date(class="form-control",type="date",placeholder='')}}
+        {% endif %}
+      </div>
+      <div class="form-group col-md mb-3">
+        {{form.to_date.label(class="form-control-label")}}
+        {% if form.to_date.errors %}
+        {{form.to_date(class="form-control is-invalid",type='date')}}
+        <div class="invalid-feedback">
+          {% for error in form.to_date.errors %}
+          <span>{{error}}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{form.to_date(class="form-control",type="date",placeholder='')}}
+        {% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="col text-right">
+        {{form.submit(class='btn btn-dark text-right')}}
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="row m-4">
+  <div class="col ml-2">
+    {% if current_user.role == 'Airline Staff' %}
+    <h3 class="text-center">Flights Record - {{current_user.airline_name}}</h3>
+    {% if searching %}
+    <div class="text-center">Departing from {{form.from_date.data}} to {{form.to_date.data}}</div>
+    {% endif %}
+
+    {% for flight in flights %}
+    <div style="width:100%" class="row p-4 flight-card">
+      <div class="col-sm-3">
+        <h4>Departing</h4>
+        <div class="text-muted">{{flight.departure_datetime.date()}}</div>
+
+      </div>
+      <div class="col-sm-3">
+        <h4>
+          {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+          {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+          <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+          {% endif %}
+        </h4>
+        <div class="text-muted">{{flight.airline_name}}</div>
+        <small class="text-muted">{{flight.flight_number}}</small>
+      </div>
+      <div class="col-sm-3">
+        <h4>
+          {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+          {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+        </h4>
+        <div class="text-muted">
+          {{flight.departure_airport}} - {{flight.arrival_airport}}
+        </div>
+      </div>
+      <div class="col text-right">
+        <h4>${{flight.base_price}}</h4>
+        <div class="text-muted">{{flight.seats_left}} seats left</div>
+        <div class="text-muted">{{flight.status}}</div>
+
+      </div>
+    </div>
+    <div class="row pb-2">
+      <div class="col text-right">
+        <a class="text-muted"
+          href=" {{url_for('edit_flight',flight=flight.airline_name + '-'+flight.flight_number)}}">edit flight
+          status</a>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+
+    <h3 class="text-center">Your Flight Ticket History</h3>
+    {% if searching and current_user.role == 'Customer' %}
+    <div class="text-center">Departing from {{form.from_date.data}} to {{form.to_date.data}}</div>
+    {% elif searching and current_user.role == 'Booking Agent' %}
+    <div class="text-center">Purchased from {{form.from_date.data}} to {{form.to_date.data}}</div>
+    {% endif %}
+    {% for ticket in tickets %}
+    {% set flight = ticket.flight%}
+    <div style="width:100%" class="row p-4 flight-card">
+      <div class="col-sm-3">
+        <h4>Departing</h4>
+        <div class="text-muted">{{flight.departure_datetime.date()}}</div>
+        {% if ticket.booking_agent_id and current_user.role == 'Customer' %}
+        <div class="mt-1">Booked by</div>
+        <small class="text-muted">{{ticket.booking_agent_id }}</small>
+        {% elif ticket.booking_agent_id and current_user.role == 'Booking Agent' %}
+        <div class="mt-1">Booked for</div>
+        <small class="text-muted">{{ticket.customer.name}} ({{ticket.customer_email}})</small>
+        {% endif %}
+      </div>
+      <div class="col-sm-3">
+        <h4>
+          {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+          {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+          <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+          {% endif %}
+        </h4>
+        <div class="text-muted">{{flight.airline_name}}</div>
+        <small class="text-muted">{{flight.flight_number}}</small>
+      </div>
+      <div class="col-sm-3">
+        <h4>
+          {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+          {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+        </h4>
+        <div class="text-muted">
+          {{flight.departure_airport}} - {{flight.arrival_airport}}
+        </div>
+      </div>
+      <div class="col text-right">
+        <h4>${{flight.base_price}}</h4>
+        <div class="text-muted">100 seats left</div>
+        <div class="text-muted">{{flight.status}}</div>
+      </div>
+    </div>
+    <div class="row pb-2 mr-4">
+      <div class="col text-right">
+        <a class="text-muted" href=" {{url_for('view_ticket',ticket_id=ticket.id)}}">view ticket info</a>
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+</div>
+
+
+
+
+
+{% endblock content %}
