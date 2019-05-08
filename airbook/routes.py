@@ -7,7 +7,7 @@ from airbook.forms import SearchFlightForm, PaymentForm, AgentPaymentForm, DateR
 from airbook.forms import FlightStatusEditForm, FlightRegistrationForm, AirplaneRegistrationForm, AirportRegistrationForm
 from airbook.models import Airline, Airport, Airplane, Flight, Customer, AirlineStaff, AirlineStaffPhoneNumber, BookingAgent, Ticket
 from flask_login import login_user, logout_user, current_user, login_required
-from airbook.utils import id_generator
+from airbook.utils import id_generator, init_dict_key_month_between, str_year_month, top_customer_data_from_tickets, top_booking_agent_data_from_tickets
 from datetime import datetime, timedelta
 from sqlalchemy import and_, or_, func
 
@@ -297,6 +297,67 @@ def view_commision():
                            form=form, title='View Commision')
 
 
+@app.route('/view_spending', methods=['GET', 'POST'])
+@login_required
+def view_spending():
+    if current_user.role != 'Customer':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    from_date = datetime.utcnow().date() - timedelta(days=365)
+    to_date = datetime.utcnow().date()
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    tickets = [ticket for ticket in current_user.tickets
+               if ticket.purchase_datetime.date() <= to_date and ticket.purchase_datetime.date() >= from_date]
+    total_spending = sum([ticket.sold_price for ticket in tickets])
+    num_of_tickets = len(tickets)
+
+    barChartData = init_dict_key_month_between(from_date, to_date)
+
+    for ticket in tickets:
+        year_month = str_year_month(ticket.purchase_datetime)
+        barChartData[year_month] += ticket.sold_price
+
+    labels, data = [], []
+    for label, value in barChartData.items():
+        labels.append(label)
+        data.append(float(value))
+
+    return render_template('view_spending.html', num_of_tickets=num_of_tickets,
+                           total_spending=total_spending, searching=searching,
+                           form=form, labels=labels, data=data, title='View Commision')
+
+
+@app.route('/view_top_customer', methods=['GET', 'POST'])
+@login_required
+def view_top_customer():
+    if current_user.role != 'Booking Agent':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    tickets_one_year = [ticket for ticket in current_user.tickets
+                        if ticket.purchase_datetime <= datetime.utcnow() and ticket.purchase_datetime >= datetime.utcnow()-timedelta(days=365)]
+    customers, commision, num_of_tickets = top_customer_data_from_tickets(tickets_one_year)
+    top_data_one_year = {'customers':customers,'commision':commision,'num_of_tickets':num_of_tickets}
+
+    tickets_six_month = [ticket for ticket in tickets_one_year
+                        if ticket.purchase_datetime >= datetime.utcnow()-timedelta(days=183)]
+    customers, commision, num_of_tickets = top_customer_data_from_tickets(tickets_six_month)
+    top_data_six_month = {'customers':customers,'commision':commision,'num_of_tickets':num_of_tickets}
+
+
+    return render_template('view_top_customer.html',
+            top_data_one_year=top_data_one_year,top_data_six_month=top_data_six_month,
+            title='View Commision')
+
+
 @app.route('/create_flight', methods=['GET', 'POST'])
 @login_required
 def create_flight():
@@ -389,3 +450,23 @@ def airport_management():
     airports.sort(key=lambda airport: airport.country + airport.city)
 
     return render_template("airport_management.html", airports=airports, form=form, title='Airplane Management')
+
+@app.route('/view_top_booking_agent', methods=['GET', 'POST'])
+@login_required
+def view_top_booking_agent():
+    if current_user.role != 'Airline Staff':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+    tickets_one_year = Ticket.query.filter(and_(
+        Ticket.purchase_datetime <= datetime.utcnow(),
+        Ticket.purchase_datetime >= datetime.utcnow()-timedelta(days=365)),
+        Ticket.booking_agent_id != None,
+        Ticket.airline_name == current_user.airline_name
+        ).all()
+    booking_agents, commision, num_of_tickets = top_booking_agent_data_from_tickets(tickets_one_year)
+
+    top_data = {'booking_agents':booking_agents,'commision':commision,'num_of_tickets':num_of_tickets}
+
+    return render_template('view_top_booking_agent.html',
+            top_data=top_data,
+            title='View Commision')

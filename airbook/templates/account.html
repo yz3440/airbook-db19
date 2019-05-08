@@ -38,9 +38,12 @@
       <div class="col-sm-3">
         <h4>Departing</h4>
         <div class="text-muted">{{flight.departure_datetime.date()}}</div>
-        {% if ticket.booking_agent_id %}
+        {% if ticket.booking_agent_id and current_user.role == 'Customer' %}
         <div class="mt-1">Booked by</div>
         <small class="text-muted">{{ticket.booking_agent_id }}</small>
+        {% elif ticket.booking_agent_id and current_user.role == 'Booking Agent' %}
+        <div class="mt-1">Booked for</div>
+        <small class="text-muted">{{ticket.customer.name}} ({{ticket.customer_email}})</small>
         {% endif %}
       </div>
       <div class="col-sm-3">

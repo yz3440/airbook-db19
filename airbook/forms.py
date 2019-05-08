@@ -288,7 +288,7 @@ class AirportRegistrationForm(FlaskForm):
             raise ValidationError("Airport already exists.")
 
 
-class git(FlaskForm):
+class DateRangeSelectionForm(FlaskForm):
     from_date = DateField('From', validators=[DataRequired()])
     to_date = DateField('To', validators=[DataRequired()])
     submit = SubmitField("Search")

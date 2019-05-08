@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="row m-4">
+    <h3 class="col m-4 text-center">Your Top 5 Customers</h3>
+</div>
+
+
+<div class="row m-4">
+    <div class="col">
+        <div class="text-center">Past six months</div>
+        <canvas id="commision_six_month"></canvas>
+        <canvas id="num_of_tickets_six_month"></canvas>
+    </div>
+    <div class="col">
+        <div class="text-center">Past one year</div>
+        <canvas id="commision_one_year"></canvas>
+        <canvas id="num_of_tickets_one_year"></canvas>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+<script>
+    var ctx = document.getElementById('commision_six_month').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'bar',
+
+        // The data for our dataset
+        data: {
+            labels: [{% for label in top_data_six_month['customers'] %}'{{label}}',{% endfor %}],
+    datasets: [{
+        label: 'Commision',
+        backgroundColor: 'rgb(32,32,32)',
+        borderColor: 'rgb(0, 0, 0)',
+        data: {{ top_data_six_month['commision'] }}
+            }]
+        },
+
+    // Configuration options go here
+    options: { }
+    });
+    var ctx = document.getElementById('num_of_tickets_six_month').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'bar',
+
+        // The data for our dataset
+        data: {
+            labels: [{% for label in top_data_six_month['customers'] %}'{{label}}',{% endfor %}],
+    datasets: [{
+        label: 'Tickets Bought',
+        backgroundColor: 'rgb(32,32,32)',
+        borderColor: 'rgb(0, 0, 0)',
+        data: {{ top_data_six_month['num_of_tickets'] }}
+            }]
+        },
+
+    // Configuration options go here
+    options: { }
+    });
+    var ctx = document.getElementById('commision_one_year').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'bar',
+
+        // The data for our dataset
+        data: {
+            labels: [{% for label in top_data_one_year['customers'] %}'{{label}}',{% endfor %}],
+    datasets: [{
+        label: 'Commision',
+        backgroundColor: 'rgb(32,32,32)',
+        borderColor: 'rgb(0, 0, 0)',
+        data: {{ top_data_one_year['commision'] }}
+            }]
+        },
+
+    // Configuration options go here
+    options: { }
+    });
+    var ctx = document.getElementById('num_of_tickets_one_year').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'bar',
+
+        // The data for our dataset
+        data: {
+            labels: [{% for label in top_data_six_month['customers'] %}'{{label}}',{% endfor %}],
+    datasets: [{
+        label: 'Tickets Bought',
+        backgroundColor: 'rgb(32,32,32)',
+        borderColor: 'rgb(0, 0, 0)',
+        data: {{ top_data_one_year['num_of_tickets'] }}
+            }]
+        },
+
+    // Configuration options go here
+    options: { }
+    });
+
+</script>
+
+
+{% endblock content %}
