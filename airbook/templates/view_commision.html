@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<!-- Search Form -->
+<div class="row border border-dark rounded m-4">
+    <form style="width:100%" class="m-4" method="POST" action="">
+        {{form.hidden_tag()}}
+        <div class="form-row">
+            <div class="form-group col-md mb-3">
+                {{form.from_date.label(class="form-control-label")}}
+                {% if form.from_date.errors %}
+                {{form.from_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.from_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.from_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+            <div class="form-group col-md mb-3">
+                {{form.to_date.label(class="form-control-label")}}
+                {% if form.to_date.errors %}
+                {{form.to_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.to_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.to_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col text-right">
+                {{form.submit(class='btn btn-dark text-right')}}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Search Results -->
+{% if searching %}
+<div class="text-center">Commision data from {{form.from_date.data}} to {{form.to_date.data}}</div>
+{% else %}
+<div class="text-center">Commision data from the last 30 days</div>
+{% endif %}
+<div class="row border border-dark rounded m-4">
+    <div style="width:100%" class="row m-4 flight-card">
+        <div class="col-md">
+            <h4>
+                Tickets Sold
+            </h4>
+            <div class="text-muted">{{num_of_tickets}}</div>
+        </div>
+        <div class="col-md">
+            <h4>
+                Total Commision
+            </h4>
+            <div class="text-muted">
+                ${{total_commision}}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}

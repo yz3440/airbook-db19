@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<!-- Search Form -->
+<div class="row border border-dark rounded m-4">
+    <form style="width:100%" class="m-4" method="POST" action="">
+        {{form.hidden_tag()}}
+        <div class="form-row">
+            <div class="form-group col-md-2 mb-3">
+                {{form.source_place.label(class="form-control-label")}}
+                {% if form.source_place.errors %}
+                {{form.source_place(class="form-control is-invalid")}}
+                <div class="invalid-feedback">
+                    {% for error in form.source_place.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.source_place(class="form-control",placeholder="City/Airport")}}
+                {% endif %}
+            </div>
+            <div class="form-group col-md-2 mb-3">
+                {{form.destination_place.label(class="form-control-label")}}
+                {% if form.destination_place.errors %}
+                {{form.destination_place(class="form-control is-invalid")}}
+                <div class="invalid-feedback">
+                    {% for error in form.destination_place.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.destination_place(class="form-control",placeholder="City/Airport")}}
+                {% endif %}
+            </div>
+            <div class="form-group col-md-4 mb-3">
+                {{form.departure_date.label(class="form-control-label")}}
+                {% if form.departure_date.errors %}
+                {{form.departure_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.departure_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.departure_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+            <div class="form-group col-md-4 mb-3">
+                {{form.arrival_date.label(class="form-control-label")}}
+                {% if form.arrival_date.errors %}
+                {{form.arrival_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.arrival_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.arrival_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-row mb-2">
+            <div class="custom-control custom-checkbox ml-1">
+                {{form.round_trip(class="custom-control-input")}}
+                {{form.round_trip.label(class='custom-control-label')}}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col text-right">
+                {{form.submit(class='btn btn-dark text-right')}}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Search Results -->
+{% if searching %}
+<div class="text-center">Found {{flights|length}} leaving trips on {{form.departure_date.data}}</div>
+{% else %}
+<div class="text-center">Showing all the future flights available</div>
+{% endif %}
+<div class="row border border-dark rounded m-4">
+    {% for flight in flights %}
+    <div style="width:100%" class="row m-4 flight-card">
+        {% if not searching %}
+        <div class="col-sm">
+            <h4>Departing</h4>
+            <div class="text-muted">{{flight.departure_datetime.date()}}</div>
+        </div>
+        {% endif %}
+        <div class="col-sm-3">
+            <h4>
+                {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+                {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+                <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+                {% endif %}
+            </h4>
+            <div class="text-muted">{{flight.airline_name}}</div>
+            <small class="text-muted">{{flight.flight_number}}</small>
+        </div>
+        <div class="col-sm-3">
+            <h4>
+                {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+                {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+            </h4>
+            <div class="text-muted">
+                {{flight.departure_airport}} - {{flight.arrival_airport}}
+            </div>
+        </div>
+        <div class="col text-right">
+            <h4>${{flight.base_price}}</h4>
+            <div class="text-muted">{{flight.seats_left}} seats left</div>
+
+            <div class="text-muted">{{flight.status}}</div>
+
+        </div>
+        <div class="col-sm-auto text-right">
+            <a class="btn btn-dark"
+                href="{{url_for('purchase',flight=flight.airline_name + '-' + flight.flight_number)}}"
+                role="button">Purchase</a>
+        </div>
+    </div>
+
+    {% endfor %}
+</div>
+
+{% if round_trip %}
+<div class="text-center">Found {{returning_flights|length}} returning trips on {{form.arrival_date.data}}</div>
+
+<div class="row border border-dark rounded m-4">
+
+    {% for flight in returning_flights %}
+    <div style="width:100%" class="row m-4 flight-card">
+        <div class="col-sm-3">
+            <h4>
+                {{flight.departure_datetime.strftime('%X')[:-3]}}-{{flight.arrival_datetime.strftime('%X')[:-3   ]}}
+
+                {% if flight.arrival_datetime.day - flight.departure_datetime.day > 0 %}
+                <span class="text-muted">+{{flight.arrival_datetime.day - flight.departure_datetime.day}}</span>
+                {% endif %}
+            </h4>
+            <div class="text-muted">{{flight.airline_name}}</div>
+            <small class="text-muted">{{flight.flight_number}}</small>
+        </div>
+        <div class="col-sm-3">
+            <h4>
+                {% set duration = flight.arrival_datetime-flight.departure_datetime %}
+                {{(duration.seconds/3600 + duration.days * 24)|int}}h {{(duration.seconds%3600/60)|int}}m
+            </h4>
+            <div class="text-muted">
+                {{flight.departure_airport}} - {{flight.arrival_airport}}
+            </div>
+        </div>
+        <div class="col text-right">
+            <h4>${{flight.base_price}}</h4>
+            <div class="text-muted">{{flight.seats_left}} seats left</div>
+            <div class="text-muted">{{flight.status}}</div>
+
+        </div>
+        <div class="col-sm-auto text-right">
+            <a class="btn btn-dark"
+                href="{{url_for('purchase',flight=flight.airline_name + '-' + flight.flight_number)}}"
+                role="button">Purchase</a>
+        </div>
+    </div>
+
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock content %}
