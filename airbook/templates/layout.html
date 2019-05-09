@@ -73,7 +73,14 @@
               <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
                 aria-expanded="false">View</a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="{{url_for('view_top_booking_agent')}}">View Top Booking Agent</a>
+                <a class="dropdown-item" href="{{url_for('view_top_booking_agent')}}">Top Booking Agent</a>
+                <a class="dropdown-item" href="{{url_for('view_frequent_customer')}}">Frequent Customer</a>
+                <a class="dropdown-item" href="{{url_for('view_ticket_report')}}">Tic
+                  ket Report</a>
+                <a class="dropdown-item" href="{{url_for('view_top_destination')}}">Top Destinations</a>
+
+
+
               </div>
             </li>
             {% endif %}

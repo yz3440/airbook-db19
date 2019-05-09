@@ -7,7 +7,7 @@ from airbook.forms import SearchFlightForm, PaymentForm, AgentPaymentForm, DateR
 from airbook.forms import FlightStatusEditForm, FlightRegistrationForm, AirplaneRegistrationForm, AirportRegistrationForm
 from airbook.models import Airline, Airport, Airplane, Flight, Customer, AirlineStaff, AirlineStaffPhoneNumber, BookingAgent, Ticket
 from flask_login import login_user, logout_user, current_user, login_required
-from airbook.utils import id_generator, init_dict_key_month_between, str_year_month, top_customer_data_from_tickets, top_booking_agent_data_from_tickets
+from airbook.utils import id_generator, init_dict_key_month_between, str_year_month, top_customer_data_from_tickets, top_booking_agent_data_from_tickets, frequent_customer_data_from_tickets
 from datetime import datetime, timedelta
 from sqlalchemy import and_, or_, func
 
@@ -332,7 +332,7 @@ def view_spending():
 
     return render_template('view_spending.html', num_of_tickets=num_of_tickets,
                            total_spending=total_spending, searching=searching,
-                           form=form, labels=labels, data=data, title='View Commision')
+                           form=form, labels=labels, data=data, title='View Spending')
 
 
 @app.route('/view_top_customer', methods=['GET', 'POST'])
@@ -451,7 +451,7 @@ def airport_management():
 
     return render_template("airport_management.html", airports=airports, form=form, title='Airplane Management')
 
-@app.route('/view_top_booking_agent', methods=['GET', 'POST'])
+@app.route('/view_top_booking_agent')
 @login_required
 def view_top_booking_agent():
     if current_user.role != 'Airline Staff':
@@ -470,3 +470,161 @@ def view_top_booking_agent():
     return render_template('view_top_booking_agent.html',
             top_data=top_data,
             title='View Commision')
+
+
+@app.route('/view_frequent_customer')
+@login_required
+def view_frequent_customer():
+    if current_user.role != 'Airline Staff':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+    tickets_one_year = Ticket.query.filter(and_(
+        Ticket.purchase_datetime <= datetime.utcnow(),
+        Ticket.purchase_datetime >= datetime.utcnow()-timedelta(days=365)),
+        Ticket.airline_name == current_user.airline_name
+        ).all()
+    customers, num_of_tickets = frequent_customer_data_from_tickets(tickets_one_year)
+
+    top_data = {'customers':customers, 'num_of_tickets':num_of_tickets}
+
+    tickets = Ticket.query.all()
+    customer_airlines={}
+
+    for ticket in tickets:
+        if ticket.customer_email not in customer_airlines:
+            customer_airlines[ticket.customer_email] = (ticket.airline_name,)
+        else:
+            if ticket.airline_name not in  customer_airlines[ticket.customer_email]:
+                customer_airlines[ticket.customer_email] += (ticket.airline_name,)
+
+    for customer in list(customer_airlines.keys()):
+        if len(customer_airlines[customer]) != 1:
+             customer_airlines.pop(customer)
+
+
+    return render_template('view_frequent_customer.html',
+            top_data=top_data, customer_airlines=customer_airlines,
+            title='View Frequent Customer')
+
+@app.route('/view_ticket_report', methods=['GET', 'POST'])
+@login_required
+def view_ticket_report():
+    if current_user.role != 'Airline Staff':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    from_date = datetime.utcnow() - timedelta(days=365)
+    to_date = datetime.utcnow()
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    tickets = Ticket.query.filter(
+        Ticket.purchase_datetime <= to_date,
+        Ticket.purchase_datetime >= from_date,
+        Ticket.airline_name == current_user.airline_name
+    ).all()
+
+    barChartData = init_dict_key_month_between(from_date, to_date)
+    total_revenue = 0
+    num_of_tickets = 0
+
+    for ticket in tickets:
+        year_month = str_year_month(ticket.purchase_datetime)
+        barChartData[year_month] += 1
+        total_revenue += (ticket.sold_price - ticket.commision)
+        num_of_tickets += 1
+
+
+    labels, data = [], []
+    for label, value in barChartData.items():
+        labels.append(label)
+        data.append(float(value))
+
+    return render_template('view_ticket_report.html', searching=searching,
+                           form=form, labels=labels,
+                           num_of_tickets=num_of_tickets, total_revenue=total_revenue,
+                           data=data, title='View Ticket Report')
+
+@app.route('/view_revenue_composition', methods=['GET', 'POST'])
+@login_required
+def view_revenue_composition():
+    if current_user.role != 'Airline Staff':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    from_date = datetime.utcnow() - timedelta(days=365)
+    to_date = datetime.utcnow()
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    tickets = Ticket.query.filter(
+        Ticket.purchase_datetime <= to_date,
+        Ticket.purchase_datetime >= from_date,
+        Ticket.airline_name == current_user.airline_name
+    ).all()
+
+    direct_sales = 0
+    indirect_sales = 0
+
+    for ticket in tickets:
+        if ticket.booking_agent_id:
+            indirect_sales += ticket.sold_price-ticket.commision
+        else:
+            direct_sales += ticket.sold_price
+
+    return render_template('view_revenue_composition.html', searching=searching,
+                           form=form, direct_sales=direct_sales,
+                           indirect_sales=indirect_sales,
+                            title='View Revenue Composition')
+
+
+@app.route('/view_top_destination', methods=['GET', 'POST'])
+@login_required
+def view_top_destination():
+    if current_user.role != 'Airline Staff':
+        flash(f'This page is not available for {current_user.role}')
+        return redirect(url_for("home"))
+
+    from_date = datetime.utcnow() - timedelta(days=365)
+    to_date = datetime.utcnow()
+    searching = False
+    form = DateRangeSelectionForm()
+
+    if form.validate_on_submit():
+        searching = True
+        from_date = form.from_date.data
+        to_date = form.to_date.data
+
+    tickets = Ticket.query.filter(
+        Ticket.purchase_datetime <= to_date,
+        Ticket.purchase_datetime >= from_date,
+    ).all()
+
+    destination_airports = [ticket.flight.arrival_airport for ticket in tickets]
+    destinations = [Airport.query.get(airport_name).city for airport_name in destination_airports]
+    destinations_count = {}
+    for destination in destinations:
+        if destination in destinations_count:
+            destinations_count[destination] += 1
+        else:
+            destinations_count[destination] = 1
+
+    top_three_destinations = (sorted(destinations_count,
+                            key=destinations_count.__getitem__, reverse=True))[:3]
+    top_three_ticket_count = [destinations_count[destination] for destination in top_three_destinations]
+
+
+    return render_template('view_top_destination.html', searching=searching,
+                           form=form, top_three_destinations=top_three_destinations,
+                           top_three_ticket_count=top_three_ticket_count,
+                            title='View Top Destination')

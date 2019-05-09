@@ -201,4 +201,4 @@ class Ticket(db.Model):
 
     @property
     def commision(self):
-        return self.sold_price / 10 if self.booking_agent_id else None
+        return self.sold_price / 10 if self.booking_agent_id else 0

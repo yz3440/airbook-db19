@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<!-- Search Form -->
+<div class="row border border-dark rounded m-4">
+    <form style="width:100%" class="m-4" method="POST" action="">
+        {{form.hidden_tag()}}
+        <div class="form-row">
+            <div class="form-group col-md mb-3">
+                {{form.from_date.label(class="form-control-label")}}
+                {% if form.from_date.errors %}
+                {{form.from_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.from_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.from_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+            <div class="form-group col-md mb-3">
+                {{form.to_date.label(class="form-control-label")}}
+                {% if form.to_date.errors %}
+                {{form.to_date(class="form-control is-invalid",type='date')}}
+                <div class="invalid-feedback">
+                    {% for error in form.to_date.errors %}
+                    <span>{{error}}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{form.to_date(class="form-control",type="date",placeholder='')}}
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col text-right">
+                {{form.submit(class='btn btn-dark text-right')}}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Search Results -->
+{% if searching %}
+<div class="text-center">Revenue Composision from {{form.from_date.data}} to {{form.to_date.data}}</div>
+{% else %}
+<div class="text-center">Revenue Composision for the last year</div>
+{% endif %}
+
+
+<div class="row">
+    <div class="col"></div>
+    <div class="col-8">
+        <canvas id="myChart"></canvas>
+
+    </div>
+    <div class="col"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'pie',
+
+        // The data for our dataset
+        data: {
+            labels: ['Direct Sales', 'Indirect Sales'],
+            datasets: [{
+                label: 'Revenue Earned',
+                backgroundColor: ['rgb(32,32,32)', 'rgb(125,125,125)'],
+                borderColor: 'rgb(255, 255, 255)',
+                data: [{{ direct_sales }}, {{ indirect_sales }}]
+    }]
+        },
+
+    // Configuration options go here
+    options: { }
+    });
+</script>
+
+
+{% endblock content %}

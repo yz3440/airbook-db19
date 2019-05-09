@@ -296,3 +296,5 @@ class DateRangeSelectionForm(FlaskForm):
     def validate_to_date(self, to_date):
         if to_date.data < self.from_date.data:
             raise ValidationError("To-date earlier than from-date")
+        elif to_date.data > datetime.utcnow().date():
+            raise ValidationError("To-date later than today.")
