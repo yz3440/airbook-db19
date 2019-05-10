@@ -15,7 +15,6 @@ from sqlalchemy import and_, or_, func
 @app.route("/", methods=['GET', 'POST'])
 @app.route("/search_flight", methods=['GET', 'POST'])
 def home():
-    print(current_user)
 
     flights = Flight.query.filter(
         Flight.departure_datetime > datetime.utcnow()).order_by(Flight.departure_datetime).all()
@@ -223,7 +222,6 @@ def edit_account():
 @login_required
 def view_ticket(ticket_id):
     ticket = Ticket.query.get(ticket_id)
-    print(ticket)
     if ticket:
         if (current_user.role == 'Customer' and ticket.customer_email == current_user.email) \
                 or current_user.role == 'Booking Agent' and ticket.booking_agent_id == current_user.booking_agent_id:
